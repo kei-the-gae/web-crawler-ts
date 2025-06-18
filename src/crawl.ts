@@ -29,3 +29,27 @@ export function getURLsFromHTML(html: string, baseURL: string) {
 
   return urls;
 }
+
+export async function getHTML(url: string) {
+  console.log(`crawling ${url}`);
+
+  let res;
+  try {
+    res = await fetch(url);
+  } catch (err) {
+    throw new Error(`Got Network error: ${(err as Error).message}`);
+  }
+
+  if (res.status > 399) {
+    console.log(`Got HTTP error: ${res.status} ${res.statusText}`);
+    return;
+  }
+
+  const contentType = res.headers.get("content-type");
+  if (!contentType || !contentType.includes("text/html")) {
+    console.log(`Got non-HTML response: ${contentType}`);
+    return;
+  }
+
+  console.log(await res.text());
+}
