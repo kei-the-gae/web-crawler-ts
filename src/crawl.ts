@@ -10,25 +10,97 @@ export function normalizeURL(url: string) {
   return fullPath;
 }
 
-export function getURLsFromHTML(html: string, baseURL: string) {
-  const urls = [];
-  const dom = new JSDOM(html);
-  const anchors = dom.window.document.querySelectorAll("a");
-
-  for (const anchor of anchors) {
-    let href = anchor.getAttribute("href");
-    if (href) {
-      try {
-        // convert any relative URLs to absolute URLs
-        href = new URL(href, baseURL).href;
-        urls.push(href);
-      } catch (err) {
-        console.log(`${(err as Error).message}: ${href}`);
-      }
-    }
+export function getH1FromHTML(html: string): string {
+  try {
+    const dom = new JSDOM(html);
+    const doc = dom.window.document;
+    const h1 = doc.querySelector("h1");
+    return (h1?.textContent ?? "").trim();
+  } catch {
+    return "";
   }
+}
 
+export function getFirstParagraphFromHTML(html: string): string {
+  try {
+    const dom = new JSDOM(html);
+    const doc = dom.window.document;
+
+    const main = doc.querySelector("main");
+    const p = main?.querySelector("p") ?? doc.querySelector("p");
+    return (p?.textContent ?? "").trim();
+  } catch {
+    return "";
+  }
+}
+
+export function getURLsFromHTML(html: string, baseURL: string): string[] {
+  const urls: string[] = [];
+  try {
+    const dom = new JSDOM(html);
+    const doc = dom.window.document;
+    const anchors = doc.querySelectorAll("a");
+
+    anchors.forEach((anchor) => {
+      const href = anchor.getAttribute("href");
+      if (!href) return;
+
+      try {
+        const absoluteURL = new URL(href, baseURL).toString();
+        urls.push(absoluteURL);
+      } catch (err) {
+        console.error(`invalid href '${href}':`, err);
+      }
+    });
+  } catch (err) {
+    console.error("failed to parse HTML:", err);
+  }
   return urls;
+}
+
+export function getImagesFromHTML(html: string, baseURL: string): string[] {
+  const imageURLs: string[] = [];
+  try {
+    const dom = new JSDOM(html);
+    const doc = dom.window.document;
+    const images = doc.querySelectorAll("img");
+
+    images.forEach((img) => {
+      const src = img.getAttribute("src");
+      if (!src) return;
+
+      try {
+        const absoluteURL = new URL(src, baseURL).toString();
+        imageURLs.push(absoluteURL);
+      } catch (err) {
+        console.error(`invalid src '${src}':`, err);
+      }
+    });
+  } catch (err) {
+    console.error("failed to parse HTML:", err);
+  }
+  return imageURLs;
+}
+
+export type ExtractedPageData = {
+  url: string;
+  h1: string;
+  first_paragraph: string;
+  outgoing_links: string[];
+  image_urls: string[];
+};
+
+export function extractPageData(
+  html: string,
+  pageURL: string,
+): ExtractedPageData {
+  return {
+    url: pageURL,
+    h1: getH1FromHTML(html),
+    first_paragraph: getFirstParagraphFromHTML(html),
+    outgoing_links: getURLsFromHTML(html, pageURL),
+    image_urls: getImagesFromHTML(html, pageURL),
+  };
 }
 
 class ConcurrentCrawler {
@@ -56,7 +128,9 @@ class ConcurrentCrawler {
     return await this.limit(async () => {
       let res;
       try {
-        res = await fetch(currentURL);
+        res = await fetch(currentURL, {
+          headers: { "User-Agent": "BootCrawler/1.0" },
+        });
       } catch (err) {
         throw new Error(`Got Network error: ${(err as Error).message}`);
       }
