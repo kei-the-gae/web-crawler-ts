@@ -1,5 +1,5 @@
 import { crawlSiteAsync } from "./crawl";
-import { printReport } from "./report";
+import { writeCSVReport } from "./report";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -31,7 +31,7 @@ async function main() {
 
   const pages = await crawlSiteAsync(baseURL, maxConcurrency, maxPages);
 
-  printReport(pages, baseURL);
+  writeCSVReport(pages, "report.csv");
 
   process.exit(0);
 }
