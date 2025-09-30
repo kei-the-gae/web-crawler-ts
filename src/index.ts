@@ -1,4 +1,4 @@
-import { crawlPage } from "./crawl";
+import { crawlSiteAsync } from "./crawl";
 import { printReport } from "./report";
 
 async function main() {
@@ -16,7 +16,7 @@ async function main() {
 
   console.log(`starting crawl of: ${baseURL}...`);
 
-  const pages = await crawlPage(baseURL);
+  const pages = await crawlSiteAsync(baseURL);
 
   printReport(pages, baseURL);
 
