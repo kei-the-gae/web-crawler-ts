@@ -8,15 +8,28 @@ async function main() {
     console.log("no website provided");
     process.exit(1);
   }
-  if (args.length > 1) {
+  if (args.length > 3) {
     console.log("too many arguments provided");
     process.exit(1);
   }
   const baseURL = args[0];
+  const maxConcurrency = Number(args[1]);
+  const maxPages = Number(args[2]);
 
-  console.log(`starting crawl of: ${baseURL}...`);
+  if (!Number.isFinite(maxConcurrency) || maxConcurrency <= 0) {
+    console.log("invalid maxConcurrency");
+    process.exit(1);
+  }
+  if (!Number.isFinite(maxPages) || maxPages <= 0) {
+    console.log("invalid maxPages");
+    process.exit(1);
+  }
 
-  const pages = await crawlSiteAsync(baseURL);
+  console.log(
+    `starting crawl of: ${baseURL} (concurrency=${maxConcurrency}, maxPages=${maxPages})...`,
+  );
+
+  const pages = await crawlSiteAsync(baseURL, maxConcurrency, maxPages);
 
   printReport(pages, baseURL);
 
